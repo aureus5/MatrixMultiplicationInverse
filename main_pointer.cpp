@@ -4,10 +4,10 @@
 #include <iostream>
 #include <chrono>
 
-#define M 1600
-#define N 1600
-#define K 1600
-#define TILE 16
+#define M 1500
+#define N 1407
+#define K 1436
+#define TILE 26
 #define WIDTH 3
 
 void print(int* matrix, int row, int col);
@@ -57,8 +57,8 @@ int main() {
 
     compareArrays(C_BruteForce, C_Tiled, M, K);
 
-    printf("exec time for brute force: %d milliseconds\n", duration_bf.count()/1000);
-    printf("exec time for tile method: %d milliseconds\n", duration_tile.count()/1000);
+    printf("exec time for brute force: %lld milliseconds\n", duration_bf.count()/1000);
+    printf("exec time for tile method: %lld milliseconds\n", duration_tile.count()/1000);
 }
 
 // utility to print a matrix
@@ -99,12 +99,59 @@ void tiledMultiply(int* A, int* B, int* C, int tileLen) {
             }
         }
     }
+
+
+    // there may be residual sides along the bottom and right part of matrix A and/or B
+    // first calculate indices for residual blocks
+    int i = M - M % tileLen;
+    int j = N - N % tileLen;
+    int h = K - K % tileLen;
+    /*
+     * First, for additional cols on the right side of A, there will be equal amount of rows at the bottom of B,
+     * this is equal to an independent, separate matrix multiplication. We can calculate this part first.
+     */
+    for (int r1 = 0; r1 < M; r1++) {
+        for (int inner1 = j; inner1 < N; inner1++) {
+            for (int c1 = 0; c1 < K; c1++) {
+                C[r1 * K + c1] += A[r1 * N + inner1] * B[inner1 * K + c1];
+            }
+        }
+    }
+
+    /*
+     * second, for additional rows at the bottom of matrix A(exclude the part that overlaps with the residual
+     * rectangle at the right
+     *
+     */
+    for (int r2 = i; r2 < M; r2++) {
+        for (int inner2 = 0; inner2 < j; inner2++) {
+            for (int c2 = 0; c2 < K; c2++) {
+                C[r2 * K + c2] += A[r2 * N + inner2] * B[inner2 * K + c2];
+            }
+        }
+    }
+
+    /*
+     * third, for additional cols at the right of matrix B(exclude the part that overlaps with the residual
+     * rectangle at the bottom
+     *
+     */
+    for (int r3 = 0; r3 < i; r3++) {
+        for (int inner3 = 0; inner3 < j; inner3++) {
+            for (int c3 = h; c3 < K; c3++) {
+                C[r3 * K + c3] += A[r3 * N + inner3] * B[inner3 * K + c3];
+            }
+        }
+    }
 }
 
 void compareArrays(int* m1, int *m2, int row, int col) {
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < col; j++) {
-            if (m1[i * col + j] != m2[i * col + j]) printf(" ====== Not equal======\n");
+            if (m1[i * col + j] != m2[i * col + j]) {
+                printf(" ====== Not equal======\n");
+                return;
+            }
         }
     }
     printf(" ====== equal======\n");
