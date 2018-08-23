@@ -6,6 +6,10 @@
 #define BRAINCORP_COMMONUTILS_H
 #define WIDTH 3
 
+/*
+ * utility to generate a matrix of specified dimensions using random numbers. The random generator has been
+ * initialized earlier. Random numbers are in the range of [0, range-1], inclusive.
+ */
 void generateMatrixUsingRandomNumbers(int* matrix, int dim1, int dim2, int range) {
     // Generate Matrix using random number in range [0,range-1] inclusive
     for (int i = 0; i < dim1; ++i) {
@@ -30,6 +34,10 @@ void print(int* matrix, int row, int col) {
     printf("\n");
 }
 
+/*
+ * utility to compare if three arrays are identical. If any elelments is not the same among the three, print
+ * "NOT equal", otherwise print "equal" at the end.
+ */
 void compareArrays(int* m1, int *m2, int* m3, int row, int col) {
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < col; j++) {

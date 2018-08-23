@@ -24,3 +24,12 @@ Dimensions of matrixes M=1687, N=1589, K=1863, tile_size=20, threads=6
 Matrix multiply exec time for brute force: 53079 milliseconds
 Matrix multiply exec time for tile method: 17002 milliseconds
 Matrix multiply exec time for tile+thread: 4639 milliseconds
+
+
+===========================================================
+for transpose, matrix[3425][5234], TILE=20
+bruteforce: 291ms
+tiling: 123ms
+
+===========================================================
+
