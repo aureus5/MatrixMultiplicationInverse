@@ -5,6 +5,7 @@
 #ifndef BRAINCORP_MATRIXMULPLICATION_H
 #define BRAINCORP_MATRIXMULPLICATION_H
 
+#include <cstring>
 #define THREAD_NUM 8
 
 void bruteForceMultiply(int *A, int *B, int *C, int M, int N, int K) {
@@ -220,8 +221,8 @@ void matrixMulplication() {
         int* C_BruteForce = (int*)malloc(sizeof(int) * M * K);  // using brute force matrix multiplication
         int* C_Tile = (int*)malloc(sizeof(int) * M * K);     // using tiling to make cache hot
         int* C_Tile_Thread = (int*)malloc(sizeof(int) * M * K);   // using tiling and multiple threads
-        memset(C_Tile, 0, M*K*sizeof(int));
-        memset(C_Tile_Thread, 0, M*K*sizeof(int));
+        std::memset(C_Tile, 0, M*K*sizeof(int));
+        std::memset(C_Tile_Thread, 0, M*K*sizeof(int));
 
         generateMatrixUsingRandomNumbers(A, M, N, range);
         generateMatrixUsingRandomNumbers(B, N, K, range);
