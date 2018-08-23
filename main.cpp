@@ -4,11 +4,13 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include "commonUtils.h"
+#include "MatrixTranspose.h"
 
 #define THREAD_NUM 8
-#define WIDTH 3
+//#define WIDTH 3
 
-void print(int* matrix, int row, int col);
+//void print(int* matrix, int row, int col);
 void generateMatrixUsingRandomNumbers(int* matrix, int dim1, int dim2, int range);
 long long getExecTime(int* A, int* B, int* C, int M, int N, int K, int TILE, int algorithm);
 void bruteForceMultiply(int* A, int* B, int* C, int M, int N, int K);
@@ -19,68 +21,71 @@ void tilingPartThreading(int* A, int* B, int* C, int M, int N, int K, int TILE, 
 void compareArrays(int* m1, int* m2, int* m3, int row, int col);
 
 int main() {
+    transposeMatrix(3425, 5234, 20);
 
-    // initialize random generator
-    srand(2018);
-    int range = 100; // matrix elements are randoms numbers in the the range[0, range-1], inclusive
-
-    int parameters[][4] = {{45, 35, 29, 20}, {135, 175, 124, 20},{374, 567, 421, 20},{635, 783, 323, 20},
-                           {834, 895,798, 20}, {1376, 1487, 1533, 20}, {1687, 1589, 1863, 20}};
-
-    for (int i = 0; i < sizeof(parameters) / sizeof(parameters[0]); i++) {
-        int M = parameters[i][0];
-        int N = parameters[i][1];
-        int K = parameters[i][2];
-        int TILE = parameters[i][3];
-
-        // declare matrix
-        int* A = (int*)malloc(sizeof(int) * M * N);
-        int* B = (int*)malloc(sizeof(int) * N * K);
-        int* C_BruteForce = (int*)malloc(sizeof(int) * M * K);  // using brute force matrix multiplication
-        int* C_Tile = (int*)malloc(sizeof(int) * M * K);     // using tiling to make cache hot
-        int* C_Tile_Thread = (int*)malloc(sizeof(int) * M * K);   // using tiling and multiple threads
-        memset(C_Tile, 0, M*K*sizeof(int));
-        memset(C_Tile_Thread, 0, M*K*sizeof(int));
-
-        generateMatrixUsingRandomNumbers(A, M, N, range);
-        generateMatrixUsingRandomNumbers(B, N, K, range);
-
-        // matrix AxB multiplication.
-        // Three Algorithms: algorithm 0: brute force; algorithm 1: using tiling; algorithm 2: tiling + multi_thread
-        long long exec_time_brute_force = getExecTime(A, B, C_BruteForce, M, N, K, TILE, 0);
-        long long exec_time_tile_only = getExecTime(A, B, C_Tile, M, N, K, TILE, 1);
-        long long exec_time_tile_threads = getExecTime(A, B, C_Tile_Thread, M, N, K, TILE, 2);
-
-        // will print "not equal" if any elelment is not equal for the three arrays
-        compareArrays(C_BruteForce, C_Tile, C_Tile_Thread, M, K);
-
-        printf("Dimensions of matrixes M=%d, N=%d, K=%d, tile_size=%d\n", M, N, K, TILE);
-        printf("Matrix multiply exec time for brute force: %lld milliseconds\n", exec_time_brute_force);
-        printf("Matrix multiply exec time for tile method: %lld milliseconds\n", exec_time_tile_only);
-        printf("Matrix multiply exec time for tile+thread: %lld milliseconds\n\n", exec_time_tile_threads);
-    }
+//
+//
+//    // initialize random generator
+//    srand(2018);
+//    int range = 100; // matrix elements are randoms numbers in the the range[0, range-1], inclusive
+//
+//    int parameters[][4] = {{45, 35, 29, 20}, {135, 175, 124, 20},{374, 567, 421, 20},{635, 783, 323, 20},
+//                           {834, 895,798, 20}, {1376, 1487, 1533, 20}, {1687, 1589, 1863, 20}};
+//
+//    for (int i = 0; i < sizeof(parameters) / sizeof(parameters[0]); i++) {
+//        int M = parameters[i][0];
+//        int N = parameters[i][1];
+//        int K = parameters[i][2];
+//        int TILE = parameters[i][3];
+//
+//        // declare matrix
+//        int* A = (int*)malloc(sizeof(int) * M * N);
+//        int* B = (int*)malloc(sizeof(int) * N * K);
+//        int* C_BruteForce = (int*)malloc(sizeof(int) * M * K);  // using brute force matrix multiplication
+//        int* C_Tile = (int*)malloc(sizeof(int) * M * K);     // using tiling to make cache hot
+//        int* C_Tile_Thread = (int*)malloc(sizeof(int) * M * K);   // using tiling and multiple threads
+//        memset(C_Tile, 0, M*K*sizeof(int));
+//        memset(C_Tile_Thread, 0, M*K*sizeof(int));
+//
+//        generateMatrixUsingRandomNumbers(A, M, N, range);
+//        generateMatrixUsingRandomNumbers(B, N, K, range);
+//
+//        // matrix AxB multiplication.
+//        // Three Algorithms: algorithm 0: brute force; algorithm 1: using tiling; algorithm 2: tiling + multi_thread
+//        long long exec_time_brute_force = getExecTime(A, B, C_BruteForce, M, N, K, TILE, 0);
+//        long long exec_time_tile_only = getExecTime(A, B, C_Tile, M, N, K, TILE, 1);
+//        long long exec_time_tile_threads = getExecTime(A, B, C_Tile_Thread, M, N, K, TILE, 2);
+//
+//        // will print "not equal" if any elelment is not equal for the three arrays
+//        compareArrays(C_BruteForce, C_Tile, C_Tile_Thread, M, K);
+//
+//        printf("Dimensions of matrixes M=%d, N=%d, K=%d, tile_size=%d, threads=%d\n", M, N, K, TILE, THREAD_NUM);
+//        printf("Matrix multiply exec time for brute force: %lld milliseconds\n", exec_time_brute_force);
+//        printf("Matrix multiply exec time for tile method: %lld milliseconds\n", exec_time_tile_only);
+//        printf("Matrix multiply exec time for tile+thread: %lld milliseconds\n\n", exec_time_tile_threads);
+//    }
 }
 
-// utility to print a matrix
-void print(int* matrix, int row, int col) {
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            printf("%*d ", WIDTH, matrix[i * col + j]);
-        }
-        printf("\n");
-    }
-    printf("\n");
-}
+//// utility to print a matrix
+//void print(int* matrix, int row, int col) {
+//    for (int i = 0; i < row; i++) {
+//        for (int j = 0; j < col; j++) {
+//            printf("%*d ", WIDTH, matrix[i * col + j]);
+//        }
+//        printf("\n");
+//    }
+//    printf("\n");
+//}
 
-void generateMatrixUsingRandomNumbers(int* matrix, int dim1, int dim2, int range) {
-    // Generate Matrix using random number in range [0,range-1] inclusive
-    for (int i = 0; i < dim1; ++i) {
-        for (int j = 0; j < dim2; ++j) {
-            matrix[i * dim2 + j] = rand() % range;
-        }
-    }
-//    print(A, M, N);
-}
+//void generateMatrixUsingRandomNumbers(int* matrix, int dim1, int dim2, int range) {
+//    // Generate Matrix using random number in range [0,range-1] inclusive
+//    for (int i = 0; i < dim1; ++i) {
+//        for (int j = 0; j < dim2; ++j) {
+//            matrix[i * dim2 + j] = rand() % range;
+//        }
+//    }
+////    print(A, M, N);
+//}
 
 long long getExecTime(int* A, int* B, int* C, int M, int N, int K, int TILE, int algorithm) {
     auto start = std::chrono::high_resolution_clock::now();
@@ -268,16 +273,16 @@ void tiledMultiply(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     }
 }
 
-void compareArrays(int* m1, int *m2, int* m3, int row, int col) {
-    for (int i = 0; i < row; i++) {
-        for (int j = 0; j < col; j++) {
-            if (m1[i * col + j] != m2[i * col + j] || m1[i * col + j] != m3[i * col + j]) {
-                printf(" ====== The three matrices calculated are NOT equal ======\n");
-//                printf("i=%d, j=%d\n", i, j);
-//                printf("m1=%d, m2=%d\n", m1[i * col + j], m2[i * col + j]);
-                return;
-            }
-        }
-    }
-    printf(" ====== The three matrices calculated are equal ======\n");
-}
+//void compareArrays(int* m1, int *m2, int* m3, int row, int col) {
+//    for (int i = 0; i < row; i++) {
+//        for (int j = 0; j < col; j++) {
+//            if (m1[i * col + j] != m2[i * col + j] || m1[i * col + j] != m3[i * col + j]) {
+//                printf(" ====== The three matrices calculated are NOT equal ======\n");
+////                printf("i=%d, j=%d\n", i, j);
+////                printf("m1=%d, m2=%d\n", m1[i * col + j], m2[i * col + j]);
+//                return;
+//            }
+//        }
+//    }
+//    printf(" ====== The three matrices calculated are equal ======\n");
+//}

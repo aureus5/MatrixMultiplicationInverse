@@ -11,5 +11,16 @@ exec time for tile method: 8800 milliseconds
 
 ===========================================================
 
-with two threads, one for the part that can be covered by tiles, the other for residual blocks.
 
+
+ ====== The three matrices calculated are equal ======
+Dimensions of matrixes M=1687, N=1589, K=1863, tile_size=20, threads=12
+Matrix multiply exec time for brute force: 52312 milliseconds
+Matrix multiply exec time for tile method: 17093 milliseconds
+Matrix multiply exec time for tile+thread: 4706 milliseconds
+
+ ====== The three matrices calculated are equal ======
+Dimensions of matrixes M=1687, N=1589, K=1863, tile_size=20, threads=6
+Matrix multiply exec time for brute force: 53079 milliseconds
+Matrix multiply exec time for tile method: 17002 milliseconds
+Matrix multiply exec time for tile+thread: 4639 milliseconds
