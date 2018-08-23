@@ -1,0 +1,15 @@
+#define M 1500
+#define N 1407
+#define K 1436
+#define TILE 20
+#define WIDTH 3
+
+No threading used;
+ ====== equal======
+exec time for brute force: 26342 milliseconds
+exec time for tile method: 8800 milliseconds
+
+===========================================================
+
+with two threads, one for the part that can be covered by tiles, the other for residual blocks.
+

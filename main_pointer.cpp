@@ -7,7 +7,7 @@
 #define M 1500
 #define N 1407
 #define K 1436
-#define TILE 26
+#define TILE 18
 #define WIDTH 3
 
 void print(int* matrix, int row, int col);
@@ -87,7 +87,7 @@ void bruteForceMultiply(int *A, int *B, int *C) {
 void tiledMultiply(int* A, int* B, int* C, int tileLen) {
     for (int i = 0; i + tileLen - 1 < M; i += tileLen) {
         for (int j = 0; j + tileLen - 1 < N; j += tileLen) {
-            for (int h = 0; h + tileLen - 1 < K; h += tileLen) {
+            for (int h = 0; h + tileLen - 1 < K; h += tileLen) {  // be sure to start from zero for every upper loop
                 // calculating a square tile unit
                 for (int r = i; r < i + tileLen; r++) {
                     for (int inner = j; inner < j + tileLen; inner++) {
@@ -103,6 +103,8 @@ void tiledMultiply(int* A, int* B, int* C, int tileLen) {
 
     // there may be residual sides along the bottom and right part of matrix A and/or B
     // first calculate indices for residual blocks
+    // Note: this can't be declared at the beginning of this function and initialize them to 0. The reason is for the
+    // first three loops above, the variable has to be initialize to zero for the 2nd and 3rd loop.
     int i = M - M % tileLen;
     int j = N - N % tileLen;
     int h = K - K % tileLen;
