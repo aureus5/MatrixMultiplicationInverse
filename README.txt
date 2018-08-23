@@ -5,6 +5,8 @@ To compile and generate the executable, type this in terminal window: g++ main.c
 
 This package is developed using Clion.  The project can be directly opened and run to obtain results comparing the algorithms.
 
+The packaged is in my github repository: https://github.com/aureus5/MatrixMultiplicationTranspose.git  From here you can see my dev record.
+
 commonUtils.h contains methods that are used by both matrix transpose and multiply.
 
 Code for matrix transpose is in MatrixTranspose.h.
