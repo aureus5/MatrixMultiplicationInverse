@@ -34,7 +34,7 @@ void print_NK(int matrix[][K]) {
 
 
 int main() {
-
+printf("%d\n\n",(int)1e5);
     int* a = (int*)malloc(3*sizeof(int));
     memset(a, 0, sizeof(a));
     printf("%d\n", a[0]);
