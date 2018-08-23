@@ -5,52 +5,60 @@
 #include <thread>
 #include <chrono>
 
-#define M 1350
-#define N 1750
-#define K 1240
-#define TILE 24
 #define THREAD_NUM 8
 #define WIDTH 3
 
 void print(int* matrix, int row, int col);
 void generateMatrixUsingRandomNumbers(int* matrix, int dim1, int dim2, int range);
-long long getExecTime(int* A, int* B, int* C, int algorithm);
-void bruteForceMultiply(int* A, int* B, int* C);
-void tiledMultiply(int* A, int* B, int* C);
-void tiledMultiply_multiThread(int* A, int* B, int* C);
-void residualBlockThread(int* A, int* B, int* C);
-void tilingPartThreading(int* A, int* B, int* C, int thread_id);
+long long getExecTime(int* A, int* B, int* C, int M, int N, int K, int TILE, int algorithm);
+void bruteForceMultiply(int* A, int* B, int* C, int M, int N, int K);
+void tiledMultiply(int* A, int* B, int* C, int M, int N, int K, int TILE);
+void tiledMultiply_multiThread(int* A, int* B, int* C, int M, int N, int K, int TILE);
+void residualBlockThread(int* A, int* B, int* C, int M, int N, int K, int TILE);
+void tilingPartThreading(int* A, int* B, int* C, int M, int N, int K, int TILE, int thread_id);
 void compareArrays(int* m1, int* m2, int* m3, int row, int col);
 
 int main() {
 
     // initialize random generator
     srand(2018);
+    int range = 100; // matrix elements are randoms numbers in the the range[0, range-1], inclusive
 
-    int range = 10;
+    int parameters[][4] = {{45, 35, 29, 20}, {135, 175, 124, 20},{374, 567, 421, 20},{635, 783, 323, 20},
+                           {834, 895,798, 20}, {1376, 1487, 1533, 20}, {1687, 1589, 1863, 20}};
 
-    // declare matrix
-    int* A = (int*)malloc(sizeof(int) * M * N);
-    int* B = (int*)malloc(sizeof(int) * N * K);
-    int* C_BruteForce = (int*)malloc(sizeof(int) * M * K);  // using brute force matrix multiplication
-    int* C_Tile = (int*)malloc(sizeof(int) * M * K);     // using tiling to make cache hot
-    int* C_Tile_Thread = (int*)malloc(sizeof(int) * M * K);   // using tiling and multiple threads
-    memset(C_Tile, 0, M*K*sizeof(int));
-    memset(C_Tile_Thread, 0, M*K*sizeof(int));
+    for (int i = 0; i < sizeof(parameters) / sizeof(parameters[0]); i++) {
+        int M = parameters[i][0];
+        int N = parameters[i][1];
+        int K = parameters[i][2];
+        int TILE = parameters[i][3];
 
-    generateMatrixUsingRandomNumbers(A, M, N, range);
-    generateMatrixUsingRandomNumbers(B, N, K, range);
+        // declare matrix
+        int* A = (int*)malloc(sizeof(int) * M * N);
+        int* B = (int*)malloc(sizeof(int) * N * K);
+        int* C_BruteForce = (int*)malloc(sizeof(int) * M * K);  // using brute force matrix multiplication
+        int* C_Tile = (int*)malloc(sizeof(int) * M * K);     // using tiling to make cache hot
+        int* C_Tile_Thread = (int*)malloc(sizeof(int) * M * K);   // using tiling and multiple threads
+        memset(C_Tile, 0, M*K*sizeof(int));
+        memset(C_Tile_Thread, 0, M*K*sizeof(int));
 
-    long long exec_time_brute_force = getExecTime(A, B, C_BruteForce, 0);
-    long long exec_time_tile_only = getExecTime(A, B, C_Tile, 1);
-    long long exec_time_tile_threads = getExecTime(A, B, C_Tile_Thread, 2);
+        generateMatrixUsingRandomNumbers(A, M, N, range);
+        generateMatrixUsingRandomNumbers(B, N, K, range);
 
-    // will print "not equal" if any elelment is not equal for the three arrays
-    compareArrays(C_BruteForce, C_Tile, C_Tile_Thread, M, K);
+        // matrix AxB multiplication.
+        // Three Algorithms: algorithm 0: brute force; algorithm 1: using tiling; algorithm 2: tiling + multi_thread
+        long long exec_time_brute_force = getExecTime(A, B, C_BruteForce, M, N, K, TILE, 0);
+        long long exec_time_tile_only = getExecTime(A, B, C_Tile, M, N, K, TILE, 1);
+        long long exec_time_tile_threads = getExecTime(A, B, C_Tile_Thread, M, N, K, TILE, 2);
 
-    printf("exec time for brute force: %lld milliseconds\n", exec_time_brute_force);
-    printf("exec time for tile method: %lld milliseconds\n", exec_time_tile_only);
-    printf("exec time for tile_thread method: %lld milliseconds\n", exec_time_tile_threads);
+        // will print "not equal" if any elelment is not equal for the three arrays
+        compareArrays(C_BruteForce, C_Tile, C_Tile_Thread, M, K);
+
+        printf("Dimensions of matrixes M=%d, N=%d, K=%d, tile_size=%d\n", M, N, K, TILE);
+        printf("Matrix multiply exec time for brute force: %lld milliseconds\n", exec_time_brute_force);
+        printf("Matrix multiply exec time for tile method: %lld milliseconds\n", exec_time_tile_only);
+        printf("Matrix multiply exec time for tile+thread: %lld milliseconds\n\n", exec_time_tile_threads);
+    }
 }
 
 // utility to print a matrix
@@ -74,24 +82,25 @@ void generateMatrixUsingRandomNumbers(int* matrix, int dim1, int dim2, int range
 //    print(A, M, N);
 }
 
-long long getExecTime(int* A, int* B, int* C, int algorithm) {
+long long getExecTime(int* A, int* B, int* C, int M, int N, int K, int TILE, int algorithm) {
     auto start = std::chrono::high_resolution_clock::now();
     if (algorithm == 0) {
-        bruteForceMultiply(A, B, C);
+        bruteForceMultiply(A, B, C, M, N, K);
     }
     else if (algorithm == 1) {
-        tiledMultiply(A, B, C);
+        tiledMultiply(A, B, C, M, N, K, TILE);
     }
     else if (algorithm == 2) {
-        tiledMultiply_multiThread(A, B, C);
+        tiledMultiply_multiThread(A, B, C, M, N, K, TILE);
     }
 //    print(C, M, K);   // print results of matrix multiplication
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration_bf = (std::chrono::duration_cast<std::chrono::microseconds>(end - start)).count() / 1000; // in ms
-    return duration_bf;
+    auto duration = (std::chrono::duration_cast<std::chrono::microseconds>(end - start)).count() / 1000; // in ms
+//    printf("exec time for algorithm %d: %lld milliseconds\n", algorithm, duration);
+    return duration;
 }
 
-void bruteForceMultiply(int *A, int *B, int *C) {
+void bruteForceMultiply(int *A, int *B, int *C, int M, int N, int K) {
     for (int row = 0; row < M; row++) {
         for (int col = 0; col < K; col++) {
             int cur = 0;
@@ -103,7 +112,7 @@ void bruteForceMultiply(int *A, int *B, int *C) {
     }
 }
 
-void residualBlockThread(int* A, int* B, int* C) {
+void residualBlockThread(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     // there may be residual sides along the bottom and right part of matrix A and/or B
     // first calculate indices for residual blocks
     // Note: this can't be declared at the beginning of this function and initialize them to 0. The reason is for the
@@ -150,7 +159,7 @@ void residualBlockThread(int* A, int* B, int* C) {
     }
 }
 
-void tilingPartThreading(int* A, int* B, int* C, int thread_id) {
+void tilingPartThreading(int* A, int* B, int* C, int M, int N, int K, int TILE, int thread_id) {
     int total_tiles_dir1 = K / TILE;
     int num_tile_per_thread = total_tiles_dir1 / (THREAD_NUM - 1);
     int start_idx = (thread_id - 1) * num_tile_per_thread * TILE;
@@ -173,12 +182,12 @@ void tilingPartThreading(int* A, int* B, int* C, int thread_id) {
     }
 }
 
-void tiledMultiply_multiThread(int* A, int* B, int* C) {
+void tiledMultiply_multiThread(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     std::thread workers[THREAD_NUM];
-    workers[0] = std::thread(residualBlockThread, std::ref(A), std::ref(B), std::ref(C));
-    workers[0].join();
+    workers[0] = std::thread(residualBlockThread, std::ref(A), std::ref(B), std::ref(C), M, N, K, TILE);
+    workers[0].join();  // this is required to avoid data race for larger matrices
     for (int i = 1; i < THREAD_NUM; i++) {
-        workers[i] = std::thread(tilingPartThreading, std::ref(A), std::ref(B), std::ref(C), i);
+        workers[i] = std::thread(tilingPartThreading, std::ref(A), std::ref(B), std::ref(C), M, N, K, TILE, i);
     }
 
     for (int i = 1; i < THREAD_NUM; ++i) {
@@ -186,7 +195,7 @@ void tiledMultiply_multiThread(int* A, int* B, int* C) {
     }
 }
 
-void tiledMultiply(int* A, int* B, int* C) {
+void tiledMultiply(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     for (int i = 0; i + TILE - 1 < M; i += TILE) {
         for (int j = 0; j + TILE - 1 < N; j += TILE) {
             for (int h = 0; h + TILE - 1 < K; h += TILE) {  // be sure to start from zero for every upper loop
