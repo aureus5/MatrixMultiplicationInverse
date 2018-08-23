@@ -8,6 +8,9 @@
 #include <cstring>
 #define THREAD_NUM 8
 
+/*
+ * brute force using three loops.
+ */
 void bruteForceMultiply(int *A, int *B, int *C, int M, int N, int K) {
     for (int row = 0; row < M; row++) {
         for (int col = 0; col < K; col++) {
@@ -100,6 +103,12 @@ void tilingPartThreading(int* A, int* B, int* C, int M, int N, int K, int TILE, 
     }
 }
 
+/*
+ * driver method for setting up worker threads to devide the work.
+ * the first thread(thread[0]) is used to calculate the residual blocks. This has to finish first before other
+ * worker threads start. The reason is that this first thread will be updating the same entries as some of the worker
+ * threads, leading to data race.
+ */
 void tiledMultiply_multiThread(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     std::thread workers[THREAD_NUM];
     workers[0] = std::thread(residualBlockThread, std::ref(A), std::ref(B), std::ref(C), M, N, K, TILE);
@@ -113,6 +122,11 @@ void tiledMultiply_multiThread(int* A, int* B, int* C, int M, int N, int K, int 
     }
 }
 
+/*
+ * multiply using tiling only.  Since most matrices are not multiples of tiles, there will be residual blocks.
+ * Here I am dividing the work into four parts: the computation heavy one is the portion that are multiples of
+ * tiles(for large matrices). The rest will update the result matrix with necessary additions.
+ */
 void tiledMultiply(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     for (int i = 0; i + TILE - 1 < M; i += TILE) {
         for (int j = 0; j + TILE - 1 < N; j += TILE) {
@@ -176,6 +190,10 @@ void tiledMultiply(int* A, int* B, int* C, int M, int N, int K, int TILE) {
     }
 }
 
+/*
+ * Utility method to obtain exec time for the three multiply algorithms:
+ * 0. brute force, 1. tiling only, 2. tiling+multithread.
+ */
 long long getExecTime(int* A, int* B, int* C, int M, int N, int K, int TILE, int algorithm) {
     auto start = std::chrono::high_resolution_clock::now();
     if (algorithm == 0) {
@@ -194,6 +212,9 @@ long long getExecTime(int* A, int* B, int* C, int M, int N, int K, int TILE, int
     return duration;
 }
 
+/*
+ * driver method to compare three multiply algorithms: 0. brute force, 1. tiling only, 2. tiling+multithread.
+ */
 void matrixMulplication() {
     // initialize random generator
     srand(2018);
