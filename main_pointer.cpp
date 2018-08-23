@@ -2,18 +2,24 @@
 // Created by GuoweiWu on 8/21/18.
 //
 #include <iostream>
+#include <thread>
 #include <chrono>
 
-#define M 1500
-#define N 1407
-#define K 1436
-#define TILE 18
+#define M 350
+#define N 750
+#define K 240
+#define TILE 24
+#define THREAD_NUM 8
 #define WIDTH 3
 
 void print(int* matrix, int row, int col);
 void bruteForceMultiply(int* A, int* B, int* C);
-void tiledMultiply(int* A, int* B, int* C, int tileSize);
+void tiledMultiply(int* A, int* B, int* C, int tileLen);
+void tiledMultiply_multiThread(int* A, int* B, int* C);
+void residualBlockThread(int* A, int* B, int* C);
+void tilingPartThreading(int* A, int* B, int* C, int thread_id);
 void compareArrays(int* m1, int *m2, int row, int col);
+std::mutex m;
 
 int main() {
 
@@ -50,7 +56,8 @@ int main() {
 //    print(C_BruteForce, M, K);
 
     auto start_tile = std::chrono::high_resolution_clock::now();
-    tiledMultiply(A, B, C_Tiled, TILE);
+//    tiledMultiply(A, B, C_Tiled, TILE);
+    tiledMultiply_multiThread(A, B, C_Tiled);
     auto end_tile = std::chrono::high_resolution_clock::now();
     auto duration_tile = std::chrono::duration_cast<std::chrono::microseconds>(end_tile - start_tile);
 //    print(C_Tiled, M, K);
@@ -81,6 +88,91 @@ void bruteForceMultiply(int *A, int *B, int *C) {
             }
             C[row * K + col] = cur;
         }
+    }
+}
+
+void residualBlockThread(int* A, int* B, int* C) {
+    // there may be residual sides along the bottom and right part of matrix A and/or B
+    // first calculate indices for residual blocks
+    // Note: this can't be declared at the beginning of this function and initialize them to 0. The reason is for the
+    // first three loops above, the variable has to be initialize to zero for the 2nd and 3rd loop.
+    int i = M - M % TILE;
+    int j = N - N % TILE;
+    int h = K - K % TILE;
+    /*
+     * First, for additional cols on the right side of A, there will be equal amount of rows at the bottom of B,
+     * this is equal to an independent, separate matrix multiplication. We can calculate this part first.
+     */
+    for (int r1 = 0; r1 < M; r1++) {
+        for (int inner1 = j; inner1 < N; inner1++) {
+            for (int c1 = 0; c1 < K; c1++) {
+                C[r1 * K + c1] += A[r1 * N + inner1] * B[inner1 * K + c1];
+            }
+        }
+    }
+
+    /*
+     * second, for additional rows at the bottom of matrix A(exclude the part that overlaps with the residual
+     * rectangle at the right
+     *
+     */
+    for (int r2 = i; r2 < M; r2++) {
+        for (int inner2 = 0; inner2 < j; inner2++) {
+            for (int c2 = 0; c2 < K; c2++) {
+                C[r2 * K + c2] += A[r2 * N + inner2] * B[inner2 * K + c2];
+            }
+        }
+    }
+
+    /*
+     * third, for additional cols at the right of matrix B(exclude the part that overlaps with the residual
+     * rectangle at the bottom
+     *
+     */
+    for (int r3 = 0; r3 < i; r3++) {
+        for (int inner3 = 0; inner3 < j; inner3++) {
+            for (int c3 = h; c3 < K; c3++) {
+                C[r3 * K + c3] += A[r3 * N + inner3] * B[inner3 * K + c3];
+            }
+        }
+    }
+}
+
+void tilingPartThreading(int* A, int* B, int* C, int thread_id) {
+    int total_tiles_dir1 = K / TILE;
+    int num_tile_per_thread = total_tiles_dir1 / (THREAD_NUM - 1);
+    int start_idx = (thread_id - 1) * num_tile_per_thread * TILE;
+    int end_idx = thread_id * num_tile_per_thread * TILE;
+    if (thread_id == THREAD_NUM - 1) end_idx = M + 1 - TILE;
+
+    for (int i = start_idx; i < end_idx; i += TILE) {
+        for (int j = 0; j + TILE - 1 < N; j += TILE) {
+            for (int h = 0; h + TILE - 1 < K; h += TILE) {  // be sure to start from zero for every upper loop
+                // calculating a square tile unit
+                for (int r = i; r < i + TILE; r++) {
+                    for (int inner = j; inner < j + TILE; inner++) {
+                        for (int c = h; c < h + TILE; c++) {
+                            m.lock();
+                            C[r * K + c] += A[r * N + inner] * B[inner * K + c];
+                            m.unlock();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void tiledMultiply_multiThread(int* A, int* B, int* C) {
+    std::thread workers[THREAD_NUM];
+    workers[0] = std::thread(residualBlockThread, std::ref(A), std::ref(B), std::ref(C));
+
+    for (int i = 1; i < THREAD_NUM; i++) {
+        workers[i] = std::thread(tilingPartThreading, std::ref(A), std::ref(B), std::ref(C), i);
+    }
+
+    for (int i = 0; i < THREAD_NUM; ++i) {
+        workers[i].join();
     }
 }
 
@@ -152,6 +244,8 @@ void compareArrays(int* m1, int *m2, int row, int col) {
         for (int j = 0; j < col; j++) {
             if (m1[i * col + j] != m2[i * col + j]) {
                 printf(" ====== Not equal======\n");
+                printf("i=%d, j=%d\n", i, j);
+                printf("m1=%d, m2=%d\n", m1[i * col + j], m2[i * col + j]);
                 return;
             }
         }
