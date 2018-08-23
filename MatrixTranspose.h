@@ -93,8 +93,8 @@ void transposeMatrix() {
                            {1376,  1487,  20},
                            {1687,  1589,  20},
                            {4376,  6487,  30},
-                           {9687,  9589,  30},
-                           {16387, 15489, 30}};
+                           {8687,  9589,  30},
+                           {10387, 11489, 30}};
 
     printf("\n\nStarting of matrix transpose....\n\n");
     for (int i = 0; i < sizeof(parameters) / sizeof(parameters[0]); i++) {
@@ -127,7 +127,7 @@ void transposeMatrix() {
     }
 
     printf("\n\nEnd of matrix transpose....\n\n\n");
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 80; i++) {
         printf("=");
     }
     printf("\n\n\n");
